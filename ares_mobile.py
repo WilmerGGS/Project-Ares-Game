@@ -15,17 +15,15 @@ def main(page: ft.Page):
     page.title = "Ares Mobile"
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 20
-    # Eliminamos page.scroll = "adaptive" porque rompía las pestañas en móvil
 
-    # Variables para la UI (Cambiamos width por expand para móviles)
-    password_input = ft.TextField(label="🔑 Clave Secreta", password=True, can_reveal_password=True, expand=True)
-    text_input = ft.TextField(label="Pega el mensaje cifrado o escribe uno nuevo", multiline=True, min_lines=3, max_lines=6, expand=True)
-    text_output = ft.TextField(label="Resultado", multiline=True, min_lines=3, max_lines=6, expand=True, read_only=True)
+    # Variables para la UI (SIN expand=True para evitar bugs en móvil)
+    password_input = ft.TextField(label="🔑 Clave Secreta", password=True, can_reveal_password=True)
+    text_input = ft.TextField(label="Pega el mensaje cifrado o escribe uno nuevo", multiline=True, min_lines=3, max_lines=6)
+    text_output = ft.TextField(label="Resultado", multiline=True, min_lines=3, max_lines=6, read_only=True)
 
     file_info = ft.Text("Ningún archivo seleccionado", color="gray", size=12)
     selected_file = {"path": None, "name": None}
     
-    # El FilePicker y el Clipboard son servicios en Flet 1.0
     file_picker = ft.FilePicker()
     clipboard = ft.Clipboard()
 
@@ -68,6 +66,9 @@ def main(page: ft.Page):
 
     async def copy_to_clipboard(e):
         await clipboard.set(text_output.value)
+        page.snack_bar = ft.SnackBar(ft.Text("¡Copiado al portapapeles!"))
+        page.snack_bar.open = True
+        page.update()
 
     # --- LÓGICA DE ARCHIVOS ---
     async def pick_file(e):
@@ -123,62 +124,63 @@ def main(page: ft.Page):
             page.snack_bar.open = True
             page.update()
 
-    # --- DISEÑO DE LA INTERFAZ (Estructura Flet 1.0 optimizada para Móvil) ---
+    # --- DISEÑO DE LA INTERFAZ (Estructura Flet 1.0 optimizada para Web/Móvil) ---
     page.add(
         ft.Row([ft.Text("🛡️ Ares Mobile", size=28, weight="bold")], alignment=ft.MainAxisAlignment.CENTER),
         password_input,
-        ft.Tabs(
-            selected_index=0,
-            length=2,  
+        ft.Container(
             expand=True,
-            content=ft.Column(
+            content=ft.Tabs(
+                selected_index=0,
+                length=2,
                 expand=True,
-                controls=[
-                    ft.TabBar(
-                        tabs=[
-                            ft.Tab(label="💬 Mensajes"),
-                            ft.Tab(label="📁 Archivos"),
-                        ]
-                    ),
-                    ft.TabBarView(
-                        expand=True,
-                        controls=[
-                            # Contenido de la Pestaña 1: Mensajes
-                            ft.Container(
-                                expand=True,
-                                padding=10,
-                                content=ft.Column([
-                                    text_input,
-                                    ft.Row([
-                                        ft.Button(content="🔒 Cifrar", on_click=encrypt_text, color="green"),
-                                        ft.Button(content="🔓 Descifrar", on_click=decrypt_text, color="orange"),
-                                    ], alignment=ft.MainAxisAlignment.CENTER),
-                                    text_output,
-                                    ft.Button(content="📋 Copiar al portapapeles", on_click=copy_to_clipboard)
-                                ], spacing=15, scroll=ft.ScrollMode.ADAPTIVE) # Scroll interno para móviles pequeños
-                            ),
-                            # Contenido de la Pestaña 2: Archivos
-                            ft.Container(
-                                expand=True,
-                                padding=10,
-                                content=ft.Column([
-                                    ft.Button(content="📂 Seleccionar Archivo del Celular", on_click=pick_file),
-                                    file_info,
-                                    ft.Row([
-                                        ft.Button(content="🔒 Cifrar Archivo", on_click=encrypt_file, color="green"),
-                                        ft.Button(content="🔓 Descifrar Archivo", on_click=decrypt_file, color="orange"),
-                                    ], alignment=ft.MainAxisAlignment.CENTER),
-                                ], spacing=20, scroll=ft.ScrollMode.ADAPTIVE) # Scroll interno para móviles pequeños
-                            ),
-                        ]
-                    )
-                ]
+                content=ft.Column(
+                    expand=True,
+                    controls=[
+                        ft.TabBar(
+                            tabs=[
+                                ft.Tab(label="💬 Mensajes"),
+                                ft.Tab(label="📁 Archivos"),
+                            ]
+                        ),
+                        ft.TabBarView(
+                            expand=True,
+                            controls=[
+                                # Contenido de la Pestaña 1
+                                ft.Column(
+                                    expand=True,
+                                    scroll=ft.ScrollMode.AUTO,
+                                    controls=[
+                                        text_input,
+                                        ft.Row([
+                                            ft.Button(content="🔒 Cifrar", on_click=encrypt_text, color="green"),
+                                            ft.Button(content="🔓 Descifrar", on_click=decrypt_text, color="orange"),
+                                        ], alignment=ft.MainAxisAlignment.CENTER),
+                                        text_output,
+                                        ft.Button(content="📋 Copiar al portapapeles", on_click=copy_to_clipboard)
+                                    ]
+                                ),
+                                # Contenido de la Pestaña 2
+                                ft.Column(
+                                    expand=True,
+                                    scroll=ft.ScrollMode.AUTO,
+                                    controls=[
+                                        ft.Button(content="📂 Seleccionar Archivo del Celular", on_click=pick_file),
+                                        file_info,
+                                        ft.Row([
+                                            ft.Button(content="🔒 Cifrar Archivo", on_click=encrypt_file, color="green"),
+                                            ft.Button(content="🔓 Descifrar Archivo", on_click=decrypt_file, color="orange"),
+                                        ], alignment=ft.MainAxisAlignment.CENTER),
+                                    ]
+                                ),
+                            ]
+                        )
+                    ]
+                )
             )
         )
     )
 
-# Ejecutar como App Web
 if __name__ == "__main__":
-    # Usar el puerto que asigne Render o el 8080 en local
     puerto = int(os.getenv("PORT", 8080))
     ft.run(main, view=ft.AppView.WEB_BROWSER, port=puerto, host="0.0.0.0")
